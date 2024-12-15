@@ -196,64 +196,6 @@ class AntHelper {
       case 'stop':
         closePeerConnection(_streamId);
         break;
-/*
-      case 'takeCandidate':
-        final id = mapData['streamId'];
-        final candidate = RTCIceCandidate(
-            mapData['candidate'], mapData['id'], mapData['label']);
-        if (_peerConnections[id] != null) {
-          await _peerConnections[id]!.addCandidate(candidate);
-        } else {
-          _remoteCandidates.add(candidate);
-        }
-        break;
-
-      case 'error':
-        if (mapData['definition'] == 'no_stream_exist') {
-          if (_type == AntMediaType.Conference) {
-            Timer(Duration(seconds: 5), () {
-              play(_roomId, "", _roomId, [], "", "", "");
-            });
-          } else if (_type == AntMediaType.Play) {
-            Timer(Duration(seconds: 5), () {
-              play(_streamId, "", _roomId, [], "", "", "");
-            });
-          }
-        } else {
-          print(mapData['definition']);
-          onStateChange(HelperState.ConnectionError);
-        }
-        break;
-
-      case 'notification':
-        final decoder = JsonDecoder();
-        if (mapData['definition'] == 'play_finished' &&
-            _type == AntMediaType.Conference) {
-          Timer(Duration(seconds: 5), () {
-            play(_roomId, "", _roomId, [], "", "", "");
-          });
-        } else if (mapData['definition'] == 'publish_finished' ||
-            mapData['definition'] == 'play_finished') {
-          closePeerConnection(_streamId);
-        } else if (mapData['definition'] == 'play_started' &&
-            _type == AntMediaType.Conference) {
-          _getBroadcastObject(_roomId);
-        } else if (mapData['definition'] == 'broadcastObject' &&
-            _type == AntMediaType.Conference) {
-          final broadcastObject = decoder.convert(mapData['broadcast']);
-          if (mapData['streamId'] == _roomId) {
-            _handleMainTrackBroadcastObject(broadcastObject);
-          } else {
-            _handleSubTrackBroadcastObject(broadcastObject);
-          }
-          callbacks(command, mapData);
-          print("$command${mapData['broadcast']}");
-        } else if (mapData['definition'] == 'data_received') {
-          final notificationEvent = decoder.convert(mapData['data']);
-          _handleNotificationEvent(notificationEvent);
-        }
-        break;
-            */
       case 'error': 
         _handleErrorCommand(mapData);
         break;
