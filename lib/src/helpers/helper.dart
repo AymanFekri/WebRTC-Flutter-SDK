@@ -246,31 +246,40 @@ class AntHelper {
 Future<void> _handleNotificationCommand(Map<String, dynamic> mapData) async {
   final decoder = JsonDecoder();
   final command = mapData['command']; 
-
-  if (mapData['definition'] == 'play_finished' &&
-      _type == AntMediaType.Conference) {
-    Timer(Duration(seconds: 5), () {
-      play(_roomId, "", _roomId, [], "", "", "");
-    });
-  } else if (mapData['definition'] == 'publish_finished' ||
-      mapData['definition'] == 'play_finished') {
-    closePeerConnection(_streamId);
-  } else if (mapData['definition'] == 'play_started' &&
-      _type == AntMediaType.Conference) {
-    _getBroadcastObject(_roomId);
-  } else if (mapData['definition'] == 'broadcastObject' &&
-      _type == AntMediaType.Conference) {
-    final broadcastObject = decoder.convert(mapData['broadcast']);
-    if (mapData['streamId'] == _roomId) {
-      _handleMainTrackBroadcastObject(broadcastObject);
-    } else {
-      _handleSubTrackBroadcastObject(broadcastObject);
-    }
-    callbacks(command, mapData); // Make sure to pass the command here
-    print("$command${mapData['broadcast']}");
-  } else if (mapData['definition'] == 'data_received') {
-    final notificationEvent = decoder.convert(mapData['data']);
-    _handleNotificationEvent(notificationEvent); 
+try{
+      if (mapData['definition'] == 'play_finished' &&
+          _type == AntMediaType.Conference) {
+        Timer(Duration(seconds: 5), () {
+          play(_roomId, "", _roomId, [], "", "", "");
+        });
+      } else if (mapData['definition'] == 'publish_finished' ||
+          mapData['definition'] == 'play_finished') {
+        closePeerConnection(_streamId);
+      } else if (mapData['definition'] == 'play_started' &&
+          _type == AntMediaType.Conference) {
+        _getBroadcastObject(_roomId);
+      } else if (mapData['definition'] == 'broadcastObject' &&
+          _type == AntMediaType.Conference) {
+        print('Received broadcastObject: ${mapData['broadcast']}'); // Add this line for logging
+    
+        final broadcastObject = decoder.convert(mapData['broadcast']);
+        if (mapData['streamId'] == _roomId) {
+          _handleMainTrackBroadcastObject(broadcastObject);
+        } else {
+          _handleSubTrackBroadcastObject(broadcastObject);
+        }
+        callbacks(command, mapData); // Make sure to pass the command here
+        print("$command${mapData['broadcast']}");
+      } else if (mapData['definition'] == 'data_received') {
+        final notificationEvent = decoder.convert(mapData['data']);
+        _handleNotificationEvent(notificationEvent); 
+      }
+} catch (e, stacktrace) {
+    print('Error handling notification: $e');
+    print('Stacktrace: $stacktrace');
+    // Consider rethrowing the exception or handling it more gracefully
+    // For example, you might want to send an error report or display 
+    // an error message to the user.
   }
 }
 
