@@ -72,7 +72,7 @@ class AntHelper {
     _config = config;
   }
 
-  final JsonEncoder _encoder = JsonEncoder();
+  final JsonEncoder _encoder = const JsonEncoder();
   SimpleWebSocket? _socket;
 
   final Map<String, RTCPeerConnection> _peerConnections = {};
@@ -189,14 +189,14 @@ class AntHelper {
     switch (command) {
       case 'start':
         _handleStartCommand(mapData);
-      break;
+        break;
       case 'takeConfiguration':
         _handleTakeConfigurationCommand(mapData);
-      break;
+        break;
       case 'stop':
         closePeerConnection(_streamId);
         break;
-      case 'error': 
+      case 'error':
         _handleErrorCommand(mapData);
         break;
       case 'notification':
@@ -226,15 +226,15 @@ class AntHelper {
         break;
     }
   }
-    
+
   Future<void> _handleErrorCommand(Map<String, dynamic> mapData) async {
     if (mapData['definition'] == 'no_stream_exist') {
       if (_type == AntMediaType.Conference) {
-        Timer(Duration(seconds: 5), () {
+        Timer(const Duration(seconds: 5), () {
           play(_roomId, "", _roomId, [], "", "", "");
         });
       } else if (_type == AntMediaType.Play) {
-        Timer(Duration(seconds: 5), () {
+        Timer(const Duration(seconds: 5), () {
           play(_streamId, "", _roomId, [], "", "", "");
         });
       }
@@ -243,13 +243,14 @@ class AntHelper {
       onStateChange(HelperState.ConnectionError);
     }
   }
-Future<void> _handleNotificationCommand(Map<String, dynamic> mapData) async {
-  final decoder = JsonDecoder();
-  final command = mapData['command']; 
-try{
+
+  Future<void> _handleNotificationCommand(Map<String, dynamic> mapData) async {
+    const decoder = JsonDecoder();
+    final command = mapData['command'];
+    try {
       if (mapData['definition'] == 'play_finished' &&
           _type == AntMediaType.Conference) {
-        Timer(Duration(seconds: 5), () {
+        Timer(const Duration(seconds: 5), () {
           play(_roomId, "", _roomId, [], "", "", "");
         });
       } else if (mapData['definition'] == 'publish_finished' ||
@@ -260,8 +261,12 @@ try{
         _getBroadcastObject(_roomId);
       } else if (mapData['definition'] == 'broadcastObject' &&
           _type == AntMediaType.Conference) {
-        print('Received broadcastObject: ${mapData['broadcast']}'); // Add this line for logging
-    
+        print(
+            'Received broadcastObject: ${mapData['broadcast']}'); // Add this line for logging
+        // TODO : check why sometimes mapData is null
+        if (mapData['broadcast'] == null) {
+          return;
+        }
         final broadcastObject = decoder.convert(mapData['broadcast']);
         if (mapData['streamId'] == _roomId) {
           _handleMainTrackBroadcastObject(broadcastObject);
@@ -272,21 +277,21 @@ try{
         print("$command${mapData['broadcast']}");
       } else if (mapData['definition'] == 'data_received') {
         final notificationEvent = decoder.convert(mapData['data']);
-        _handleNotificationEvent(notificationEvent); 
+        _handleNotificationEvent(notificationEvent);
       }
-} catch (e, stacktrace) {
-    print('Error handling notification: $e');
-    print('Stacktrace: $stacktrace');
-    // Consider rethrowing the exception or handling it more gracefully
-    // For example, you might want to send an error report or display 
-    // an error message to the user.
+    } catch (e, stacktrace) {
+      print('Error handling notification: $e');
+      print('Stacktrace: $stacktrace');
+      // Consider rethrowing the exception or handling it more gracefully
+      // For example, you might want to send an error report or display
+      // an error message to the user.
+    }
   }
-}
 
   Future<void> _handleTakeCandidateCommand(Map<String, dynamic> mapData) async {
     final id = mapData['streamId'];
-    final candidate = RTCIceCandidate(
-        mapData['candidate'], mapData['id'], mapData['label']);
+    final candidate =
+        RTCIceCandidate(mapData['candidate'], mapData['id'], mapData['label']);
     if (_peerConnections[id] != null) {
       await _peerConnections[id]!.addCandidate(candidate);
     } else {
@@ -294,86 +299,89 @@ try{
     }
   }
 
-
-
-
   Future<void> _handleStartCommand(Map<String, dynamic> mapData) async {
-      final id = mapData['streamId'];
-      onStateChange(HelperState.CallStateNew);
-      _peerConnections[id] = await _createPeerConnection(id, 'publish', userScreen);
-      await _createDataChannel(_streamId, _peerConnections[_streamId]!);
-      await _createOfferAntMedia(id, _peerConnections[id]!, 'publish');
-    }
+    final id = mapData['streamId'];
+    onStateChange(HelperState.CallStateNew);
+    _peerConnections[id] =
+        await _createPeerConnection(id, 'publish', userScreen);
+    await _createDataChannel(_streamId, _peerConnections[_streamId]!);
+    await _createOfferAntMedia(id, _peerConnections[id]!, 'publish');
+  }
 
-    Future<void> _handleTakeConfigurationCommand(Map<String, dynamic> mapData) async {
-      final id = mapData['streamId'];
-      final type = mapData['type'];
-      var sdp = mapData['sdp'];
-      final isTypeOffer = type == 'offer';
-      sdp = sdp.replaceAll("a=extmap:13 urn:3gpp:video-orientation\r\n", "");
-      final dataChannelMode = isTypeOffer ? "play" : "publish";
-    
-      print("Flutter setRemoteDescription: $sdp for streamId: $id and type: $type");
-    
-      try {
-        if (_peerConnections[id] == null) {
-          _peerConnections[id] =
-              await _createPeerConnection(id, dataChannelMode, userScreen);
-          if (isTypeOffer) {
-            await _createDataChannel(id, _peerConnections[id]!);
-          }
-        }
-    
-        await _peerConnections[id]!
-            .setRemoteDescription(RTCSessionDescription(sdp, type));
-        print("Remote description set successfully for streamId: $id");
-    
-        for (final candidate in _remoteCandidates) {
-          await _peerConnections[id]!.addCandidate(candidate);
-        }
-        _remoteCandidates.clear();
-    
+  Future<void> _handleTakeConfigurationCommand(
+      Map<String, dynamic> mapData) async {
+    final id = mapData['streamId'];
+    final type = mapData['type'];
+    var sdp = mapData['sdp'];
+    final isTypeOffer = type == 'offer';
+    sdp = sdp.replaceAll("a=extmap:13 urn:3gpp:video-orientation\r\n", "");
+    final dataChannelMode = isTypeOffer ? "play" : "publish";
+
+    print(
+        "Flutter setRemoteDescription: $sdp for streamId: $id and type: $type");
+
+    try {
+      if (_peerConnections[id] == null) {
+        _peerConnections[id] =
+            await _createPeerConnection(id, dataChannelMode, userScreen);
         if (isTypeOffer) {
-          print("Creating answer for streamId: $id");
-          final answer = await _peerConnections[id]!.createAnswer(_dc_constraints);
-          await _peerConnections[id]!.setLocalDescription(answer);
-    
-          final sdpWithStereo = answer.sdp!
-              .replaceAll("useinbandfec=1", "useinbandfec=1; stereo=1");
-          final request = {
-            'command': 'takeConfiguration',
-            'streamId': id,
-            'type': answer.type,
-            'sdp': sdpWithStereo,
-          };
-          _sendAntMedia(request);
-          print("Answer created and sent for streamId: $id");
-        } else { 
-          // *** Handle the answer from the server here ***
-    
-          // Check if the peer connection is in the correct state to receive the answer
-          final pcState = _peerConnections[id]!.signalingState;
-          if (pcState == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-            await _peerConnections[id]!
-                .setRemoteDescription(RTCSessionDescription(sdp, type));
-            print("Remote description (answer) set successfully for streamId: $id");
-          } else {
-            print(
-                "WARNING: Received answer in unexpected state: $pcState, ignoring.");
-          }
-        }
-      } catch (error) {
-        print("Error setting remote description for streamId: $id: $error");
-        if (error.toString().contains("InvalidAccessError") ||
-            error.toString().contains("setRemoteDescription")) {
-          print(
-              "Error: Codec incompatibility or other issue setting remote description for streamId: $id");
+          await _createDataChannel(id, _peerConnections[id]!);
         }
       }
-    }  
+
+      await _peerConnections[id]!
+          .setRemoteDescription(RTCSessionDescription(sdp, type));
+      print("Remote description set successfully for streamId: $id");
+
+      for (final candidate in _remoteCandidates) {
+        await _peerConnections[id]!.addCandidate(candidate);
+      }
+      _remoteCandidates.clear();
+
+      if (isTypeOffer) {
+        print("Creating answer for streamId: $id");
+        final answer =
+            await _peerConnections[id]!.createAnswer(_dc_constraints);
+        await _peerConnections[id]!.setLocalDescription(answer);
+
+        final sdpWithStereo = answer.sdp!
+            .replaceAll("useinbandfec=1", "useinbandfec=1; stereo=1");
+        final request = {
+          'command': 'takeConfiguration',
+          'streamId': id,
+          'type': answer.type,
+          'sdp': sdpWithStereo,
+        };
+        _sendAntMedia(request);
+        print("Answer created and sent for streamId: $id");
+      } else {
+        // *** Handle the answer from the server here ***
+
+        // Check if the peer connection is in the correct state to receive the answer
+        final pcState = _peerConnections[id]!.signalingState;
+        if (pcState == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
+          await _peerConnections[id]!
+              .setRemoteDescription(RTCSessionDescription(sdp, type));
+          print(
+              "Remote description (answer) set successfully for streamId: $id");
+        } else {
+          print(
+              "WARNING: Received answer in unexpected state: $pcState, ignoring.");
+        }
+      }
+    } catch (error) {
+      print("Error setting remote description for streamId: $id: $error");
+      if (error.toString().contains("InvalidAccessError") ||
+          error.toString().contains("setRemoteDescription")) {
+        print(
+            "Error: Codec incompatibility or other issue setting remote description for streamId: $id");
+      }
+    }
+  }
+
   Future<void> connect(AntMediaType type) async {
     _type = type;
-    final url = '$_host';
+    final url = _host;
     _socket = SimpleWebSocket(url);
 
     if (_type == AntMediaType.DataChannelOnly) DataChannelOnly = true;
@@ -386,63 +394,21 @@ try{
 
       if (_autoStart) {
         if (_type == AntMediaType.Publish) {
-          publish(
-              _streamId,
-              _token,
-              "",
-              "",
-              _streamId,
-              "",
-              "");
+          publish(_streamId, _token, "", "", _streamId, "", "");
         } else if (_type == AntMediaType.DataChannelOnly) {
-          publish(
-              _streamId,
-              _token,
-              "",
-              "",
-              _streamId,
-              "",
-              "");
-          play(
-              _streamId,
-              _token,
-              "",
-              [],
-              "",
-              "",
-              "");
+          publish(_streamId, _token, "", "", _streamId, "", "");
+          play(_streamId, _token, "", [], "", "", "");
         } else if (_type == AntMediaType.Conference) {
-          publish(
-              _streamId,
-              _token,
-              "",
-              "",
-              _streamId,
-              _roomId,
-              "");
-          play(
-              _roomId,
-              _token,
-              _roomId,
-              [],
-              "",
-              "",
-              "");
+          publish(_streamId, _token, "", "", _streamId, _roomId, "");
+          play(_roomId, _token, _roomId, [], "", "", "");
         } else if (_type == AntMediaType.Play) {
-          play(
-              _streamId,
-              _token,
-              "",
-              [],
-              "",
-              "",
-              "");
+          play(_streamId, _token, "", [], "", "", "");
         } else if (_type == AntMediaType.Peer) {
           join(_streamId);
         }
       }
 
-      _ping = Timer.periodic(Duration(seconds: 5), (timer) {
+      _ping = Timer.periodic(const Duration(seconds: 5), (timer) {
         final ping_msg = {'command': 'ping'};
         _sendAntMedia(ping_msg);
       });
@@ -450,7 +416,7 @@ try{
 
     _socket?.onMessage = (message) {
       // print('Received data: $message');
-      final decoder = JsonDecoder();
+      const decoder = JsonDecoder();
       onMessage(decoder.convert(message));
     };
 
@@ -596,7 +562,6 @@ try{
       print(e.toString());
     }
   }
-
 
   Future<void> _createAnswerAntMedia(
     String id,
