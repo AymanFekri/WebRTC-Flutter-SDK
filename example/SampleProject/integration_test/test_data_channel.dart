@@ -8,15 +8,17 @@ void main() {
   // Initialize the integration test bindings.
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Runs the app, taps on the settings icon, enters the URL, and runs the Data Channel example', (WidgetTester tester) async {
+  testWidgets(
+      'Runs the app, taps on the settings icon, enters the URL, and runs the Data Channel example',
+      (WidgetTester tester) async {
     // Mock initial values for shared preferences.
     SharedPreferences.setMockInitialValues({});
 
     // Launch the app.
     await tester.pumpWidget(const MaterialApp(
         home: Scaffold(
-          body: MyApp(),
-        )));
+      body: MyApp(),
+    )));
 
     // Ensure the app has built.
     await tester.pumpAndSettle();
@@ -32,11 +34,13 @@ void main() {
     expect(find.byType(AlertDialog), findsOneWidget);
 
     // Enter the server URL in the TextField inside the dialog.
-    await tester.enterText(find.byType(TextField), 'wss://test.antmedia.io:5443/FlutterCICDtest/websocket');
+    await tester.enterText(find.byType(TextField),
+        'wss://test.antmedia.io:5443/FlutterCICDtest/websocket');
     await tester.pumpAndSettle();
 
     // Ensure the "Set Server Ip" button is present and enabled.
-    final setServerIpButton = find.widgetWithText(MaterialButton, 'Set Server Ip');
+    final setServerIpButton =
+        find.widgetWithText(MaterialButton, 'Set Server Ip');
     expect(setServerIpButton, findsOneWidget);
 
     // Tap the "Set Server Ip" button.
